@@ -43,6 +43,7 @@ class UserAccount(AbstractBaseUser,PermissionsMixin):
             
         )
         full_name=models.CharField(max_length=225)
+        phone_number = models.CharField(max_length=10, blank=True, null=True)
         role=models.CharField(max_length=10,choices=ROLE_CHOICES,default="student",)
         profile_image=models.ImageField(
             upload_to="profile_images/%Y/%m/%d/",
