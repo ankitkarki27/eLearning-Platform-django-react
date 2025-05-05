@@ -5,15 +5,15 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from users.permissions import CustomPermission
 from rest_framework.permissions import IsAdminUser
-from users.serializers import UserSerializer
+from users.serializers import UserAccountSerializer
 from rest_framework import status
-from users.models import User
+from users.models import UserAccount
 from django.db.models import Sum
 # from users.models
 
-class UserViewSet(ModelViewSet):
-    queryset = User.objects.all()
-    serializer_class = UserSerializer
+class UserAccountViewSet(ModelViewSet):
+    queryset = UserAccount.objects.all()
+    serializer_class = UserAccountSerializer
 
     def get_permissions(self):
         if self.action == "create":
@@ -53,9 +53,9 @@ class UserViewSet(ModelViewSet):
     # ! Returns a user by email if exists
     def get_user_by_email(self, request):
         email = request.query_params.get("email")
-        user = User.objects.filter(email=email).first()
+        user = UserAccount.objects.filter(email=email).first()
         if user:
-            return Response(UserSerializer(user).data)
+            return Response(UserAccountSerializer(user).data)
         return Response(
             status=status.HTTP_404_NOT_FOUND, data={"detail": "User not found"}
         )
@@ -63,23 +63,23 @@ class UserViewSet(ModelViewSet):
     @action(detail=False, methods=["GET"], permission_classes=[IsAuthenticated])
     # ! Returns the current logged-in user's info
     def get_user(self, request):
-        return Response(UserSerializer(request.user).data)
+        return Response(UserAccountSerializer(request.user).data)
 
     @action(detail=False, methods=["GET"], permission_classes=[IsAdminUser])
     # Admin-only(Returns all students)
     def get_students(self, request):
-        students = User.objects.filter(role="student")
-        return Response(UserSerializer(students, many=True).data)
+        students = UserAccount.objects.filter(role="student")
+        return Response(UserAccountSerializer(students, many=True).data)
 
     @action(detail=False, methods=["POST"], permission_classes=[IsAdminUser])
     # Admin-only: Approves instructor by setting is_verified to True
     def approve_instructor(self, request):
         user_id = request.data.get("user_id")
-        user = User.objects.filter(id=user_id).first()
+        user = UserAccount.objects.filter(id=user_id).first()
         if user:
             user.is_verified = True
             user.save()
-            return Response(UserSerializer(user).data)
+            return Response(UserAccountSerializer(user).data)
         return Response(
             status=status.HTTP_404_NOT_FOUND, data={"detail": "User not found"}
         )
@@ -89,14 +89,14 @@ class UserViewSet(ModelViewSet):
     def get_instructors(self, request):
         from main.models import Payment
 
-        instructors = User.objects.filter(role="instructor")
+        instructors = UserAccount.objects.filter(role="instructor")
         for instructor in instructors:
             total_earning = Payment.objects.filter(
                 course__instructor=instructor
             ).aggregate(total_earning=Sum("amount"))["total_earning"]
             instructor.total_earning = total_earning if total_earning else 0
         instructors = sorted(instructors, key=lambda x: x.total_earning, reverse=True)
-        return Response(UserSerializer(instructors, many=True).data)
+        return Response(UserAccountSerializer(instructors, many=True).data)
 
     @action(detail=False, methods=["POST"], permission_classes=[IsAuthenticated])
     def update_contact_info(self, request):
@@ -115,7 +115,7 @@ class UserViewSet(ModelViewSet):
             user.phone_number = phone_number
 
         user.save()
-        return Response(UserSerializer(user).data, status=status.HTTP_200_OK)
+        return Response(UserAccountSerializer(user).data, status=status.HTTP_200_OK)
 
 
     @action(detail=False, methods=["GET"], permission_classes=[IsAuthenticated])
@@ -123,8 +123,8 @@ class UserViewSet(ModelViewSet):
     def get_users_by_role(self, request):
         role = request.query_params.get("role")
         if role:
-            users = User.objects.filter(role=role)
-            return Response(UserSerializer(users, many=True).data)
+            users = UserAccount.objects.filter(role=role)
+            return Response(UserAccountSerializer(users, many=True).data)
         return Response(
             status=status.HTTP_400_BAD_REQUEST, data={"detail": "Role parameter is required"}
         )
