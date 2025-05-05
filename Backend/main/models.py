@@ -23,6 +23,9 @@ class Course(models.Model):
     title=models.CharField(max_length=200,unique=True)
     slug=models.SlugField(max_length=200,unique=True,null=True,blank=True)
     description=models.TextField(null=True,blank=True)
+    
+    created_at=models.DateTimeField(auto_now_add=True)
+    updated_at=models.DateTimeField(auto_now_add=True)
 #Enrollment model
 #LEsson Model
 #Payment model
