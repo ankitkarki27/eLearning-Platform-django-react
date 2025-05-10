@@ -1,8 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import (
      AbstractBaseUser,
-     BaseUserManager,
-     PermissionsMixin
+     BaseUserManager,PermissionsMixin
      )
 # Create your models here.
 class UserAccountManager(BaseUserManager):
@@ -42,6 +41,7 @@ class UserAccount(AbstractBaseUser,PermissionsMixin):
             verbose_name="email address",max_length=225,unique=True,
             
         )
+        
         full_name=models.CharField(max_length=225)
         phone_number = models.CharField(max_length=10, blank=True, null=True)
         role=models.CharField(max_length=10,choices=ROLE_CHOICES,default="student",)
@@ -64,6 +64,7 @@ class UserAccount(AbstractBaseUser,PermissionsMixin):
         USERNAME_FIELD = 'email'
         REQUIRED_FIELDS = ['full_name']
 
+        #returns the string representation of the user object
         def __str__(self):
             return f"{self.full_name} ({self.email}) - {self.role}"
 
