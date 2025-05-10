@@ -127,7 +127,7 @@ class CourseViewSet(ModelViewSet):
         return Response(serializer.data)
     
     
-    # net to review again from here to below
+    # need to review again from here to below
     @action(detail=False, methods=["GET"])
     def get_stats(self, request):
         if request.user.role != "instructor":
