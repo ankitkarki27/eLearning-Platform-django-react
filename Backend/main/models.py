@@ -1,4 +1,3 @@
-# This is  a model for a elaerning paltform
 from django.db import models
 from users.models import UserAccount
 from django.utils.text import slugify
@@ -27,10 +26,13 @@ class Course(models.Model):
     created_at=models.DateTimeField(auto_now_add=True)
     updated_at=models.DateTimeField(auto_now=True)
     price=models.DecimalField(max_digits=8,decimal_places=2,default=0.0)
+    
     instructor=models.ForeignKey(
-        UserAccount,on_delete=models.CASCADE,limit_choices_to={'role': 'instructor'}, related_name='courses')
+        UserAccount,on_delete=models.CASCADE, related_name='courses')
+    
     category=models.ForeignKey(
         Category,on_delete=models.CASCADE,related_name="courses")
+    
     thumbnail=models.ImageField(upload_to="course_thumbnails/%Y/%m/%d/",blank=True,null=True)
     is_published=models.BooleanField(default=False)
     
@@ -65,8 +67,20 @@ class Section(models.Model):
         return f"{self.title} :: {self.course.title}"
     
     def can_change(self,user):
-        return self.course.can_change(UserAccount)
-    
+        #who can change the section
+        # if user is admin then he can change the section
+        if user.role=="admin":
+            return True
+        #no other user can change the section
+        return False
+    def can_delete(self,user):
+        #who can delete the section
+        # if user is admin then he can delete the section
+        if user.role=="admin":
+            return True
+        #no other user can delete the section
+        return False
+        
     
     class Meta:
         db_table = "section"

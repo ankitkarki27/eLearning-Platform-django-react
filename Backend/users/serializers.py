@@ -22,12 +22,12 @@ class UserAccountSerializer(serializers.ModelSerializer):
         
     def create(self, validated_data):
         user=UserAccount.objects.create_user(**validated_data)
-        return user()
+        return user
     
     def update(self, instance, validated_data):
         
         instance.full_name=validated_data.get("full_name",instance.full_name)
-        instance.email=validated_data.get("email",instance.email)
+        # instance.email=validated_data.get("email",instance.email)
         instance.phone_number=validated_data.get("phone_number",instance.phone_number)
         instance.profile_image=validated_data.get("profile_image",instance.profile_image)
         

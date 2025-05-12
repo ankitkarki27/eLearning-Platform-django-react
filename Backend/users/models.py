@@ -26,17 +26,20 @@ class UserAccountManager(BaseUserManager):
         user.is_staff=True
         user.is_superuser=True
         user.role="admin"
-        user.save(using=self.db)
+        user.save(using=self._db)
         return user
     
     # UserAccount Model
 class UserAccount(AbstractBaseUser,PermissionsMixin):
         #role choices for user type
+        # instructor is optional
+        # admin can create course
         ROLE_CHOICES=[
             ("admin","Admin"),
             ("student","Student"),
-            ("instructor","Instructor"),
+            # ("instructor","Instructor"),
         ]
+        
         email=models.EmailField(
             verbose_name="email address",max_length=225,unique=True,
             

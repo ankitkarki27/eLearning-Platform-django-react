@@ -71,33 +71,16 @@ class UserAccountViewSet(ModelViewSet):
         students = UserAccount.objects.filter(role="student")
         return Response(UserAccountSerializer(students, many=True).data)
 
-    @action(detail=False, methods=["POST"], permission_classes=[IsAdminUser])
-    # Admin-only: Approves instructor by setting is_verified to True
-    def approve_instructor(self, request):
-        user_id = request.data.get("user_id")
-        user = UserAccount.objects.filter(id=user_id).first()
-        if user:
-            user.is_verified = True
-            user.save()
-            return Response(UserAccountSerializer(user).data)
-        return Response(
-            status=status.HTTP_404_NOT_FOUND, data={"detail": "User not found"}
-        )
-
+    
     @action(detail=False, methods=["GET"], permission_classes=[IsAdminUser])
-    # Admin-only: Returns instructors with total earnings sorted
-    def get_instructors(self, request):
-        from main.models import Payment
-
-        instructors = UserAccount.objects.filter(role="instructor")
-        for instructor in instructors:
-            total_earning = Payment.objects.filter(
-                course__instructor=instructor
-            ).aggregate(total_earning=Sum("amount"))["total_earning"]
-            instructor.total_earning = total_earning if total_earning else 0
-        instructors = sorted(instructors, key=lambda x: x.total_earning, reverse=True)
-        return Response(UserAccountSerializer(instructors, many=True).data)
-
+    # get admins
+    # returns all users with role admin
+    
+    def get_admins(self,request):
+        admins = UserAccount.objects.filter(role="admin")
+        return Response(UserAccountSerializer(admins, many=True).data)
+    
+   
     @action(detail=False, methods=["POST"], permission_classes=[IsAuthenticated])
     def update_contact_info(self, request):
         user = request.user

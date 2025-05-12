@@ -27,14 +27,14 @@ class CategoryListSerializer(serializers.ModelSerializer):
 # CourseListSerializer:helps to list and retrieve course
 
 class CourseSerializer(serializers.ModelSerializer):
-    instructor=UserAccountListSerializer(read_only=True)
-    instructor_id=serializers.PrimaryKeyRelatedField(
-        queryset=UserAccount.objects.filter(role="instructor"),
-        source="instructor",
+    admin=UserAccountListSerializer(read_only=True)
+    admin_id=serializers.PrimaryKeyRelatedField(
+        queryset=UserAccount.objects.filter(role="admin"),
+        source="admin",
         write_only=True,
         error_messages={
-            "does_not_exist": "Instructor does not exist.",
-            "required": "Instructor is required.",
+            "does_not_exist": "admin does not exist.",
+            "required": "admin is required.",
         },
     )
     
@@ -72,8 +72,8 @@ class CourseSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
             "sections",
-            "instructor",
-            "instructor_id",
+            "admin",
+            "admin_id",
             "price",
             "is_published",
             "slug",
@@ -84,7 +84,7 @@ class CourseSerializer(serializers.ModelSerializer):
         return SectionSerializer(sections,many=True).data
     
 class CourseListSerializer(serializers.ModelSerializer):
-    instructor=UserAccountListSerializer(read_only=True)
+    admin=UserAccountListSerializer(read_only=True)
     category=CategoryListSerializer(read_only=True)
     
     class Meta:
@@ -97,7 +97,7 @@ class CourseListSerializer(serializers.ModelSerializer):
             "category",
             "created_at",
             "updated_at",
-            "instructor",
+            "admin",
             "price",
             "is_published",
             "slug",
@@ -332,10 +332,10 @@ class PaymentListSerializer(serializers.ModelSerializer):
     #     #get details of the student and course
     #     student_name=certification.student.full_name
     #     course_title=certification.course.title
-    #     instructor_name=certification.course.instructor.full_name
+    #     admin_name=certification.course.admin.full_name
         
     #     # Generate certificate file and assign it to the model
-    #     certificate_file_path=certificate(student_name,course_title,instructor_name)
+    #     certificate_file_path=certificate(student_name,course_title,admin_name)
     #     certificate_file=certificate_file.path
     #     # Save the certificate file path to the model
     #     certification.save()

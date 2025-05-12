@@ -15,6 +15,17 @@ from django.db.models import Sum
 
 # Create your views here.
 
+#custom permission class
+
+class CustomPermission(permissions.BasePermission):
+    def has_permission(self, request, view):
+        # allow only cretain users of admin role
+        if view.action in ["create", "update", "destroy"]:
+            return request.user.role == "admin"
+        return True
+       
+    
+    
 class CategoryViewSet(ModelViewSet):
     queryset=Category.objects.all()
     serializer_class=CategorySerializer
@@ -58,7 +69,7 @@ class CourseViewSet(ModelViewSet):
     serializer_class=CourseSerializer
     permission_classes=[CustomPermission]
     search_fields=["title"]
-    filterset_fields=["category"]
+    filterset_fields=["category","is_published","admin"]
     lookup_field="slug"
     filter_backends = [filters.SearchFilter]    # Allows searching by title
     
@@ -67,11 +78,11 @@ class CourseViewSet(ModelViewSet):
     
     def create(self, request, *args, **kwargs):
         try:
-          #only instructor can create course
-          if not request.user.role=="instructor":
+          #check if user is admin
+          if not request.user.role=="admin":
               return Response(
                   status=status.HTTP_403_FORBIDDEN,
-                  data={"detail":"You are not instructor so your arenot allowed to create course"}
+                  data={"detail":"Only admin can create course"}
               )
               return super().create(request, *args, **kwargs)
         except Exception as e:
@@ -116,7 +127,7 @@ class CourseViewSet(ModelViewSet):
                 status=status.HTTP_403_FORBIDDEN,
                 data={"detail":"You are not allowed to access this endpoint"}
             )
-        courses=Course.objects.filter(instructor=request.user)
+        courses=Course.objects.filter(admin=request.user)
         serializer=self.get_serializer(courses,many=True)
         return Response(serializer.data)
     
@@ -128,23 +139,27 @@ class CourseViewSet(ModelViewSet):
     
     
     # need to review again from here to below
-    @action(detail=False, methods=["GET"])
+    @action(detail=False, methods=["GET"], permission_classes=[IsAuthenticated])
     def get_stats(self, request):
-        if request.user.role != "instructor":
+        if request.user.role != "admin":
             return Response(
                 status=status.HTTP_403_FORBIDDEN,
                 data={"detail": "Forbidden"}
             )
-        courses_count = Course.objects.filter(instructor=request.user).count()
-        published_count = Course.objects.filter(instructor=request.user, is_published=True).count()
-        student_count = Enrollment.objects.filter(course__instructor=request.user).exclude(user=request.user).count()
-        total_earning = Payment.objects.filter(course__instructor=request.user).aggregate(total=Sum("amount"))
-
+        #fetching stats for admin
+        courses_count = Course.objects.filter(admin=request.user).count()
+        published_count = Course.objects.filter(admin=request.user, is_published=True).count()
+        student_count = Enrollment.objects.filter(course__admin=request.user).exclude(user=request.user).count()
+        
+        # total earnins
+        total_earning = Payment.objects.filter(course__admin=request.user).aggregate(total=Sum("amount"))
+        total_income= total_earning["total"] if total_earning["total"] else 0.0
+        
         return Response({
             "courses": courses_count,
             "published_courses": published_count,
             "students": student_count,
-            "income": total_earning["total"] or 0.0
+            "total_income": total_income
         })
 
     @action(detail=False, methods=["GET"])
@@ -157,7 +172,7 @@ class CourseViewSet(ModelViewSet):
             )
         try:
             course = Course.objects.get(id=course_id)
-            count = Enrollment.objects.filter(course=course).exclude(user=course.instructor).count()
+            count = Enrollment.objects.filter(course=course).exclude(user=course.admin).count()
             return Response({"student_count": count})
         except Course.DoesNotExist:
             return Response(
