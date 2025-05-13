@@ -6,17 +6,17 @@ from rest_framework import status
 from users.permissions import *
 from main.models import *
 from main.serializers import *
-from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
+from rest_framework.viewsets import ModelViewSet
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework import filters
 from django.db.models import Sum
+from django.db import IntegrityError
 # from django_filters.rest_framework import DjangoFilterBackend
 
 # Create your views here.
 
 #custom permission class
-
 class CustomPermission(permissions.BasePermission):
     def has_permission(self, request, view):
         # allow only cretain users of admin role
@@ -24,8 +24,8 @@ class CustomPermission(permissions.BasePermission):
             return request.user.role == "admin"
         return True
        
-    
-    
+
+#category viewset
 class CategoryViewSet(ModelViewSet):
     queryset=Category.objects.all()
     serializer_class=CategorySerializer
@@ -59,7 +59,6 @@ class CategoryViewSet(ModelViewSet):
             kwargs["many"] = True
             return CategoryListSerializer(*args, **kwargs)
         return super().get_serializer(*args, **kwargs)
-    
     
 
 # course viewset
@@ -137,8 +136,7 @@ class CourseViewSet(ModelViewSet):
         serializer=self.get_serializer(course)
         return Response(serializer.data)
     
-    
-    # need to review again from here to below
+    # get course by category
     @action(detail=False, methods=["GET"], permission_classes=[IsAuthenticated])
     def get_stats(self, request):
         if request.user.role != "admin":
@@ -180,3 +178,144 @@ class CourseViewSet(ModelViewSet):
                 data={"detail": "Course not found."}
             )
     
+
+# section viewset
+class SectionViewSet(ModelViewSet):
+    queryset=Section.objects.all()
+    serializer_class=SectionSerializer
+    permission_classes=[CustomPermission]
+    
+    def create(self, request, *args, **kwargs):
+        try:
+            return super().create(request, *args, **kwargs)
+        except Exception as e:
+            return Response(
+                status=status.HTTP_409_CONFLICT,data={"detail":"Duplicate section title"}
+               )
+            
+    def update(self, request, *args, **kwargs):
+        try:
+            return super().update(request, *args, **kwargs)
+        except Exception as e:
+            return Response(
+                status=status.HTTP_409_CONFLICT,data={"detail":"Duplicate section title"}
+               )
+    
+    def destroy(self, request, *args, **kwargs):
+        try:
+            return super().destroy(request, *args, **kwargs)
+        except Exception as e:
+            return Response(
+                status=status.HTTP_409_CONFLICT,data={"detail":"Section cannot be deleted"}
+               )
+
+#cart viewset
+class CartViewSet(ModelViewSet):
+    queryset = Cart.objects.all().select_related("course", "student")
+    serializer_class = CartSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        # Students see only their cart, admins see all
+        if self.request.user.role == 'student':
+            return self.queryset.filter(student=self.request.user)
+        return self.queryset
+
+    def create(self, request, *args, **kwargs):
+        course_id = request.data.get("course_id")
+        if not course_id:
+            return Response(
+                {"detail": "course_id required"}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            course = Course.objects.get(id=course_id)
+        except Course.DoesNotExist:
+            return Response(
+                {"detail": "Course not found"}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        if Enrollment.objects.filter(user=request.user, course=course).exists():
+            return Response(
+                {"detail": "Already enrolled in this course"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if Cart.objects.filter(student=request.user, course=course).exists():
+            return Response(
+                {"detail": "Course already in cart"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        serializer = self.get_serializer(data={
+            'course': course.id,
+            'student': request.user.id
+        })
+        
+        serializer.is_valid(raise_exception=True)
+        serializer.save()  #creates the cart record in DB
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    @action(detail=False, methods=["DELETE"])
+    def clear_cart(self, request):
+        #clear the cart for the logged-in student
+        self.get_queryset().filter(student=request.user).delete()
+        return Response(
+            {"detail": "Cart cleared successfully"},
+            status=status.HTTP_204_NO_CONTENT
+        )
+
+    @action(detail=False, methods=["GET"])
+    def cart_total(self, request):
+        # Calculate the total price of items in the cart.
+        cart_items = self.get_queryset().filter(student=request.user)
+        total = sum(item.course.price for item in cart_items)
+        return Response({
+            "total": total,
+            "item_count": cart_items.count()
+        })
+
+#enrollment viewset
+
+#payment viewset
+
+#attachment viewset
+class AttachmentViewSet(ModelViewSet):
+    queryset = Attachment.objects.all().select_related('section')
+    serializer_class = AttachmentSerializer
+    permission_classes = [IsAuthenticated]  # Default permission
+
+    def get_permissions(self):
+        if self.action in ["list", "retrieve"]:
+            self.permission_classes = [IsAuthenticated]  # Changed from IsAdminUser
+        elif self.action in ["create", "update", "partial_update", "destroy"]:
+            self.permission_classes = [CustomPermission]
+        return super().get_permissions()
+
+    def create(self, request, *args, **kwargs):
+        try:
+            # Validate section exists and user has permission
+            section_id = request.data.get('section')
+            if not section_id:
+                return Response(
+                    {"detail": "section field is required"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Additional validation can be added here
+            return super().create(request, *args, **kwargs)
+        except IntegrityError:
+            return Response(
+                {"detail": "Duplicate entry or invalid data"},
+                status=status.HTTP_409_CONFLICT
+            )
+        except Exception as e:
+            return Response(
+                {"detail": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+            
+#certificate viewset //will be done later
+

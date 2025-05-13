@@ -18,10 +18,10 @@ urlpatterns = [
     path('api/v1/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('api/v1/token/verify/', TokenVerifyView.as_view(), name='token_verify'),
     
-    # Users App APIs (under api/v1/)
+    # App routes
     path('api/v1/users/', include('users.urls')), 
-    
-    # Listings App APIs
-    # path('api/v1/listings/', include('listings.urls')),
+    path('api/v1/main/', include('main.urls')),
+    path('api/v1/team/', include('team.urls')), 
+
 ]
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
