@@ -256,7 +256,7 @@ class EnrollmentSerializer(serializers.ModelSerializer):
 class PaymentSerializer(serializers.ModelSerializer):
     course=CourseListSerializer(read_only=True)
     course_id=serializers.PrimaryKeyRelatedField(
-        quesryset=Course.objects.all(),
+        queryset=Course.objects.all(),
         source="course",
         write_only=True,
         error_messages={

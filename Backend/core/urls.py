@@ -6,22 +6,36 @@ from django.conf.urls.static import static
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
-    TokenVerifyView
+    TokenVerifyView,
+    TokenBlacklistView
 )
+from users.views import UserAccountViewSet
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    # path("api/v1/", include("api.urls")),
-    
-     # JWT Authentication URLs (under api/v/)
-    path('api/v1/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'), 
-    path('api/v1/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
-    path('api/v1/token/verify/', TokenVerifyView.as_view(), name='token_verify'),
-    
-    # App routes
-    path('api/v1/users/', include('users.urls')), 
-    path('api/v1/main/', include('main.urls')),
-    path('api/v1/team/', include('team.urls')), 
+      path('admin/', admin.site.urls),
+    #API v1 routes
+    path('api/v1/', include([
+        
+        # App routes
+        path('users/', include('users.urls')), 
+        path('main/', include('main.urls')),
+        path('team/', include('team.urls')),
 
-]
+        # Auth routes
+        path('auth/',include([
+            path('register/', UserAccountViewSet.as_view({'post': 'create'}), name='register'),
+            path('login/', TokenObtainPairView.as_view(), name='login'),
+            path('logout/', TokenBlacklistView.as_view()),
+        ])),
+        
+        # token endpoints
+        path('token/', include([
+            path('', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+            path('refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+            path('verify/', TokenVerifyView.as_view(), name='token_verify'),
+
+        ]))
+]))
+ ]
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    
