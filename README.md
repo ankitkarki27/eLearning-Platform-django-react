@@ -19,8 +19,8 @@ A full-stack eLearning platform built with Django (backend) and React (frontend)
 ## Tech Stack
 
 - **Backend:** Django, Django REST Framework
-- **Frontend:** React.js, Redux Toolkit, Tailwind CSS
-- **Database:** PostgreSQL / MySQL
+- **Frontend:** React.js, Redux Toolkit, Tailwind CSS, shadcn/ui
+- **Database:** PostgreSQL
 - **Payment Gateway:** Khalti
 - **Version Control:** Git & GitHub
 
